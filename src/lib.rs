@@ -1,10 +1,12 @@
-/**
-This macro provides a way to initialise any container for which there is a FromIterator implementation.  It allows for both sequence and map syntax to be used, as well as inline type ascription for the result.
+/*!
+This crate provides the `collect!` macro, which can be used to easily construct arbitrary collections, including `Vec`, `String`, and `HashMap`.  It also endeavours to construct the collection with a single allocation, where possible.
 
-For example:
+## Example
 
 ```
-# #[macro_use] extern crate collect_mac;
+// In the crate root module:
+#[macro_use] extern crate collect_mac;
+
 # use std::collections::{HashMap, HashSet, BTreeMap};
 # fn main() {
 // Initialise an empty collection.
@@ -29,9 +31,56 @@ let e: BTreeMap<i32, &str> = collect![
 let f: HashMap<_, u8> = collect![as HashMap<i32, _>: 42 => 0, -11 => 2];
 # }
 ```
+
+## Details
+
+The macro supports any collection which implements both the [`Default`][Default] and [`Extend`][Extend] traits.  Specifically, it creates a new, empty collection using `Default`, then calls `Extend` once for each element.
+
+Single-allocation construction is tested and guaranteed for the following standard containers:
+
+* [`HashMap`](http://doc.rust-lang.org/std/collections/struct.HashMap.html)
+* [`HashSet`](http://doc.rust-lang.org/std/collections/struct.HashSet.html)
+* [`String`](http://doc.rust-lang.org/std/string/struct.String.html)
+* [`Vec`](http://doc.rust-lang.org/std/vec/struct.Vec.html)
+* [`VecDeque`](http://doc.rust-lang.org/std/collections/struct.VecDeque.html)
+
+In general, single-allocation construction is done by providing the number of elements through the [`Iterator::size_hint`][Iterator::size_hint] of the *first* call to `Extend`.  The expectation is that the collection will, if possible, pre-allocate enough space for all the elements when it goes to insert the first.
+
+As an example, here is a simplified version of the `Extend` implementation for `Vec`:
+
+```ignore
+impl<T> Extend<T> for Vec<T> {
+    #[inline]
+    fn extend<I: IntoIterator<Item=T>>(&mut self, iterable: I) {
+        let mut iterator = iterable.into_iter();
+        while let Some(element) = iterator.next() {
+            let len = self.len();
+            if len == self.capacity() {
+                let (lower, _) = iterator.size_hint();
+                self.reserve(lower.saturating_add(1));
+            }
+            self.push(element);
+        }
+    }
+}
+```
+
+[Default]: http://doc.rust-lang.org/std/default/trait.Default.html
+[Extend]: http://doc.rust-lang.org/std/iter/trait.Extend.html
+[Iterator::size_hint]: http://doc.rust-lang.org/std/iter/trait.Iterator.html#method.size_hint
+*/
+
+/**
+This macro can be used to easily construct arbitrary collections, including `Vec`, `String`, and `HashMap`.  It also endeavours to construct the collection with a single allocation, where possible.
+
+For more details, see [the crate documentation](./index.html).
 */
 #[macro_export]
 macro_rules! collect {
+    /*
+    Internal rules.
+    */
+
     (@count_tts $($tts:tt)*) => {
         0usize $(+ collect!(@replace_expr $tts 1usize))*
     };
@@ -43,6 +92,7 @@ macro_rules! collect {
     (@collect
         ty: $col_ty:ty,
         es: [$v0:expr, $($vs:expr),* $(,)*],
+        // `cb` is an expression that is inserted after each "step" in constructing the collection.  It largely exists for testing purposes.
         cb: ($col:ident) $cb:expr,
     ) => {
         {
@@ -68,6 +118,10 @@ macro_rules! collect {
             $col
         }
     };
+
+    /*
+    Public rules.
+    */
 
     // Short-hands for initialising an empty collection.
     [] => {

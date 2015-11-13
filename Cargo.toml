@@ -2,3 +2,14 @@
 name = "collect-mac"
 version = "0.1.0"
 authors = ["Daniel Keep <daniel.keep@gmail.com>"]
+
+description = "This crate provides the `collect!` macro, which can be used to easily construct arbitrary collections, including `Vec`, `String`, and `HashMap`.  It also endeavours to construct the collection with a single allocation, where possible."
+repository = "https://github.com/DanielKeep/rust-collect-mac"
+documentation = "https://danielkeep.github.io/rust-collect-mac/doc/collect_mac/index.html"
+license = "MIT"
+keywords = ["collection", "collect", "macro"]
+
+exclude = [
+    ".cargo/*",
+    "update-docs.py",
+]
