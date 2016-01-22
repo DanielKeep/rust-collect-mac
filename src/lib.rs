@@ -1,3 +1,12 @@
+/*
+Copyright ⓒ 2015 Daniel Keep.
+
+Licensed under the MIT license (see LICENSE or <http://opensource.org
+/licenses/MIT>) or the Apache License, Version 2.0 (see LICENSE of
+<http://www.apache.org/licenses/LICENSE-2.0>), at your option. All
+files in the project carrying such notice may not be copied, modified,
+or distributed except according to those terms.
+*/
 /*!
 This crate provides the `collect!` macro, which can be used to easily construct arbitrary collections, including `Vec`, `String`, and `HashMap`.  It also endeavours to construct the collection with a single allocation, where possible.
 
